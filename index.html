@@ -108,32 +108,47 @@
         }
         
         .control-btn {
-            background: #4a69bd;
+            background: linear-gradient(135deg, #4a69bd, #1e3799);
             color: white;
             border: none;
             padding: 12px;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
+            font-weight: bold;
             transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
         
         .control-btn:hover {
-            background: #1e3799;
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, #1e3799, #0c2461);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
         }
         
         .control-btn:active {
-            transform: translateY(0);
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         .attack-btn {
-            background: #e55039;
+            background: linear-gradient(135deg, #e55039, #eb2f06);
             grid-column: span 3;
+            font-size: 1.1rem;
+            padding: 14px;
         }
         
         .attack-btn:hover {
-            background: #eb2f06;
+            background: linear-gradient(135deg, #eb2f06, #b71540);
+        }
+        
+        .skill-btn {
+            background: linear-gradient(135deg, #78e08f, #38ada9);
+        }
+        
+        .skill-btn:hover {
+            background: linear-gradient(135deg, #38ada9, #079992);
         }
         
         .log {
@@ -217,16 +232,24 @@
                     <p><span class="stat-label">怪物血量:</span> <span id="monster-hp" class="stat-value">50/50</span></p>
                     <p><span class="stat-label">掉落经验:</span> <span id="monster-exp" class="stat-value">10</span></p>
                     <p><span class="stat-label">掉落物品:</span> <span id="monster-loot" class="stat-value">猪肉、铜币</span></p>
+                    <p><span class="stat-label">难度:</span> <span id="monster-difficulty" class="stat-value">简单</span></p>
+                </div>
+                
+                <div class="info-section equipment">
+                    <h3>🛡️ 装备</h3>
+                    <p><span class="stat-label">武器:</span> <span id="equip-weapon" class="stat-value">木剑</span></p>
+                    <p><span class="stat-label">护甲:</span> <span id="equip-armor" class="stat-value">布衣</span></p>
+                    <p><span class="stat-label">首饰:</span> <span id="equip-accessory" class="stat-value">无</span></p>
                 </div>
                 
                 <div class="controls">
-                    <button class="control-btn" onclick="move('up')">↑ 上</button>
-                    <button class="control-btn" onclick="move('left')">← 左</button>
-                    <button class="control-btn" onclick="move('right')">→ 右</button>
-                    <button class="control-btn" onclick="move('down')">↓ 下</button>
-                    <button class="control-btn" onclick="useSkill('heal')">💊 治疗</button>
-                    <button class="control-btn" onclick="useSkill('magic')">✨ 魔法</button>
-                    <button class="control-btn attack-btn" onclick="attack()">⚔️ 攻击怪物</button>
+                    <button class="control-btn" onclick="move('up')">↑ 移动</button>
+                    <button class="control-btn" onclick="move('left')">← 移动</button>
+                    <button class="control-btn" onclick="move('right')">→ 移动</button>
+                    <button class="control-btn" onclick="move('down')">↓ 移动</button>
+                    <button class="control-btn skill-btn" onclick="useSkill('heal')">💊 治疗术</button>
+                    <button class="control-btn skill-btn" onclick="useSkill('magic')">✨ 魔法盾</button>
+                    <button class="control-btn attack-btn" onclick="attack()">⚔️ 烈火剑法</button>
                 </div>
             </div>
         </div>
@@ -266,14 +289,21 @@
                 maxExp: 100,
                 attackMin: 10,
                 attackMax: 15,
-                defense: 5
+                defense: 5,
+                magicShield: null,
+                equipment: {
+                    weapon: { name: "木剑", attackBonus: 2 },
+                    armor: { name: "布衣", defenseBonus: 1 },
+                    accessory: null
+                }
             },
             monster: {
                 name: "野猪",
                 hp: 50,
                 maxHp: 50,
                 exp: 10,
-                loot: ["猪肉", "铜币"]
+                loot: ["猪肉", "铜币", "木剑", "布衣"],
+                difficulty: "简单"
             },
             log: []
         };
@@ -284,13 +314,27 @@
             document.getElementById('mp').textContent = `${gameState.player.mp}/${gameState.player.maxMp}`;
             document.getElementById('level').textContent = gameState.player.level;
             document.getElementById('exp').textContent = `${gameState.player.exp}/${gameState.player.maxExp}`;
-            document.getElementById('attack').textContent = `${gameState.player.attackMin}-${gameState.player.attackMax}`;
-            document.getElementById('defense').textContent = gameState.player.defense;
+            
+            // 计算装备加成后的属性
+            const weaponBonus = gameState.player.equipment.weapon ? gameState.player.equipment.weapon.attackBonus : 0;
+            const armorBonus = gameState.player.equipment.armor ? gameState.player.equipment.armor.defenseBonus : 0;
+            const totalAttackMin = gameState.player.attackMin + weaponBonus;
+            const totalAttackMax = gameState.player.attackMax + weaponBonus;
+            const totalDefense = gameState.player.defense + armorBonus;
+            
+            document.getElementById('attack').textContent = `${totalAttackMin}-${totalAttackMax}`;
+            document.getElementById('defense').textContent = totalDefense;
             
             document.getElementById('monster-name').textContent = gameState.monster.name;
             document.getElementById('monster-hp').textContent = `${gameState.monster.hp}/${gameState.monster.maxHp}`;
             document.getElementById('monster-exp').textContent = gameState.monster.exp;
             document.getElementById('monster-loot').textContent = gameState.monster.loot.join('、');
+            document.getElementById('monster-difficulty').textContent = gameState.monster.difficulty;
+            
+            // 更新装备显示
+            document.getElementById('equip-weapon').textContent = gameState.player.equipment.weapon.name;
+            document.getElementById('equip-armor').textContent = gameState.player.equipment.armor.name;
+            document.getElementById('equip-accessory').textContent = gameState.player.equipment.accessory ? gameState.player.equipment.accessory.name : "无";
         }
         
         // 添加日志
@@ -327,14 +371,50 @@
         // 使用技能
         function useSkill(skill) {
             const skills = {
-                'heal': { name: '治疗术', cost: 10, effect: '恢复生命值' },
-                'magic': { name: '魔法攻击', cost: 15, effect: '造成魔法伤害' }
+                'heal': { 
+                    name: '治疗术', 
+                    cost: 15, 
+                    effect: '恢复30点生命值',
+                    execute: function() {
+                        const healAmount = 30;
+                        gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + healAmount);
+                        addLog(`使用治疗术，恢复${healAmount}点生命值！`, 'info');
+                    }
+                },
+                'magic': { 
+                    name: '魔法盾', 
+                    cost: 20, 
+                    effect: '增加防御力持续3回合',
+                    execute: function() {
+                        if (!gameState.player.magicShield) {
+                            gameState.player.magicShield = {
+                                active: true,
+                                turns: 3,
+                                defenseBonus: 5
+                            };
+                            gameState.player.defense += 5;
+                            addLog('使用魔法盾，防御力+5持续3回合！', 'info');
+                            
+                            // 3回合后移除效果
+                            setTimeout(() => {
+                                if (gameState.player.magicShield && gameState.player.magicShield.active) {
+                                    gameState.player.defense -= 5;
+                                    gameState.player.magicShield = null;
+                                    addLog('魔法盾效果消失', 'info');
+                                    updateUI();
+                                }
+                            }, 30000); // 30秒
+                        } else {
+                            addLog('魔法盾已激活！', 'info');
+                        }
+                    }
+                }
             };
             
             const skillInfo = skills[skill];
             if (gameState.player.mp >= skillInfo.cost) {
                 gameState.player.mp -= skillInfo.cost;
-                addLog(`使用了${skillInfo.name}，${skillInfo.effect}`, 'info');
+                skillInfo.execute();
                 updateUI();
             } else {
                 addLog('魔法值不足！', 'combat');
@@ -414,10 +494,48 @@
         // 刷新怪物
         function refreshMonster() {
             const monsters = [
-                { name: "野猪", hp: 50, exp: 10, loot: ["猪肉", "铜币"] },
-                { name: "骷髅兵", hp: 80, exp: 15, loot: ["骨头", "铁剑", "铜币"] },
-                { name: "狼", hp: 65, exp: 12, loot: ["狼皮", "狼牙", "铜币"] },
-                { name: "哥布林", hp: 70, exp: 13, loot: ["哥布林耳朵", "短弓", "铜币"] }
+                { 
+                    name: "野猪", 
+                    hp: 50, 
+                    exp: 10, 
+                    loot: ["猪肉", "铜币(5-10)", "木剑", "布衣"],
+                    difficulty: "简单"
+                },
+                { 
+                    name: "骷髅兵", 
+                    hp: 80, 
+                    exp: 15, 
+                    loot: ["骨头", "铁剑", "铜币(10-20)", "青铜头盔"],
+                    difficulty: "普通"
+                },
+                { 
+                    name: "狼", 
+                    hp: 65, 
+                    exp: 12, 
+                    loot: ["狼皮", "狼牙", "铜币(8-15)", "皮甲"],
+                    difficulty: "简单"
+                },
+                { 
+                    name: "哥布林", 
+                    hp: 70, 
+                    exp: 13, 
+                    loot: ["哥布林耳朵", "短弓", "铜币(10-18)", "皮手套"],
+                    difficulty: "普通"
+                },
+                { 
+                    name: "僵尸", 
+                    hp: 100, 
+                    exp: 20, 
+                    loot: ["腐肉", "铁剑", "铜币(15-25)", "铁甲", "治疗药水"],
+                    difficulty: "困难"
+                },
+                { 
+                    name: "兽人战士", 
+                    hp: 120, 
+                    exp: 25, 
+                    loot: ["兽人牙齿", "战斧", "铜币(20-30)", "锁子甲", "魔法药水"],
+                    difficulty: "困难"
+                }
             ];
             
             const monster = monsters[Math.floor(Math.random() * monsters.length)];
@@ -426,10 +544,11 @@
                 hp: monster.hp,
                 maxHp: monster.hp,
                 exp: monster.exp,
-                loot: monster.loot
+                loot: monster.loot,
+                difficulty: monster.difficulty
             };
             
-            addLog(`发现了新的怪物：${monster.name}！`, 'info');
+            addLog(`发现了新的怪物：${monster.name}（${monster.difficulty}）！`, 'info');
             updateUI();
         }
         
