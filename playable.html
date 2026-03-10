@@ -1,0 +1,280 @@
+                    addLog('💀 你被击败了！', 'damage');
+                    setTimeout(() => {
+                        gameState.player.hp = Math.floor(gameState.player.maxHp / 2);
+                        addLog('系统自动复活，生命值恢复50%', 'info');
+                    }, 2000);
+                }
+            }
+            
+            updateUI();
+        }
+
+        // 使用技能
+        function useSkill(skill) {
+            const skills = {
+                'heal': { name: '治疗术', cost: 10, effect: '恢复生命值' },
+                'magic': { name: '魔法攻击', cost: 15, effect: '造成魔法伤害' }
+            };
+            
+            const skillInfo = skills[skill];
+            if (gameState.player.mp >= skillInfo.cost) {
+                gameState.player.mp -= skillInfo.cost;
+                
+                if (skill === 'heal') {
+                    const healAmount = Math.floor(gameState.player.maxHp * 0.3);
+                    gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + healAmount);
+                    addLog(`使用了${skillInfo.name}，恢复了 ${healAmount} 点生命值`, 'heal');
+                } else if (skill === 'magic') {
+                    const magicDamage = Math.floor(Math.random() * 20) + 15;
+                    gameState.monster.hp -= magicDamage;
+                    addLog(`使用了${skillInfo.name}，对${gameState.monster.name}造成了 ${magicDamage} 点魔法伤害！`, 'combat');
+                    
+                    if (gameState.monster.hp <= 0) {
+                        gameState.monster.hp = 0;
+                        addLog(`🎉 击败了${gameState.monster.name}，获得 ${gameState.monster.exp} 经验值！`, 'combat');
+                        gameState.player.exp += gameState.monster.exp;
+                    }
+                }
+                
+                updateUI();
+            } else {
+                addLog('魔法值不足！', 'combat');
+            }
+        }
+
+        // 刷新怪物
+        function refreshMonster() {
+            const monsters = [
+                { name: "野猪", hp: 50, exp: 10, loot: ["猪肉", "铜币"], difficulty: "简单" },
+                { name: "骷髅兵", hp: 80, exp: 15, loot: ["骨头", "铁剑", "铜币"], difficulty: "普通" },
+                { name: "狼", hp: 65, exp: 12, loot: ["狼皮", "狼牙", "铜币"], difficulty: "简单" },
+                { name: "哥布林", hp: 70, exp: 13, loot: ["哥布林耳朵", "短弓", "铜币"], difficulty: "普通" },
+                { name: "僵尸", hp: 100, exp: 20, loot: ["腐肉", "铁剑", "铜币", "治疗药水"], difficulty: "困难" }
+            ];
+            
+            const monster = monsters[Math.floor(Math.random() * monsters.length)];
+            gameState.monster = {
+                name: monster.name,
+                hp: monster.hp,
+                maxHp: monster.hp,
+                exp: monster.exp,
+                loot: monster.loot,
+                difficulty: monster.difficulty
+            };
+            
+            addLog(`发现了新的怪物：${monster.name}（${monster.difficulty}）！`, 'info');
+            updateUI();
+        }
+
+        // 升级
+        function levelUp() {
+            gameState.player.level++;
+            gameState.player.exp -= gameState.player.maxExp;
+            gameState.player.maxExp = Math.floor(gameState.player.maxExp * 1.5);
+            gameState.player.maxHp = Math.floor(gameState.player.maxHp * 1.2);
+            gameState.player.hp = gameState.player.maxHp;
+            gameState.player.maxMp = Math.floor(gameState.player.maxMp * 1.2);
+            gameState.player.mp = gameState.player.maxMp;
+            gameState.player.attackMin = Math.floor(gameState.player.attackMin * 1.1);
+            gameState.player.attackMax = Math.floor(gameState.player.attackMax * 1.1);
+            gameState.player.defense = Math.floor(gameState.player.defense * 1.1);
+            
+            addLog(`🎊 恭喜升级到 ${gameState.player.level} 级！`, 'info');
+            addLog(`生命值上限提升到 ${gameState.player.maxHp}，魔法值上限提升到 ${gameState.player.maxMp}`, 'info');
+            updateUI();
+        }
+
+        // 初始化游戏
+        function initGame() {
+            console.log('初始化游戏状态...');
+            updateUI();
+            addLog('游戏初始化完成，开始冒险吧！', 'info');
+            
+            // 初始化Phaser游戏
+            initPhaserGame();
+        }
+
+        // Phaser游戏初始化
+        function initPhaserGame() {
+            console.log('初始化Phaser游戏引擎...');
+            
+            if (typeof Phaser === 'undefined') {
+                addLog('❌ Phaser.js加载失败，请刷新页面重试', 'damage');
+                return;
+            }
+            
+            const config = {
+                type: Phaser.AUTO,
+                width: 800,
+                height: 500,
+                parent: 'game-canvas',
+                physics: {
+                    default: 'arcade',
+                    arcade: {
+                        gravity: { y: 0 },
+                        debug: false
+                    }
+                },
+                scene: {
+                    preload: preload,
+                    create: create,
+                    update: update
+                },
+                scale: {
+                    mode: Phaser.Scale.FIT,
+                    autoCenter: Phaser.Scale.CENTER_BOTH
+                }
+            };
+            
+            try {
+                gameState.game = new Phaser.Game(config);
+                console.log('Phaser游戏实例创建成功');
+                addLog('游戏引擎启动成功！', 'info');
+            } catch (error) {
+                console.error('游戏初始化失败:', error);
+                addLog('游戏引擎启动失败，但核心战斗功能正常', 'damage');
+            }
+        }
+
+        // Phaser场景 - 预加载
+        function preload() {
+            console.log('预加载游戏资源...');
+            this.load.image('player', 'data:image/svg+xml;base64,' + btoa(`
+                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" fill="#4B98E3"/>
+                    <circle cx="16" cy="12" r="4" fill="#FFFFFF"/>
+                    <rect x="12" y="18" width="8" height="8" fill="#FFFFFF"/>
+                </svg>
+            ));
+            
+            this.load.image('monster', 'data:image/svg+xml;base64,' + btoa(`
+                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" fill="#F64B3B"/>
+                    <circle cx="16" cy="12" r="6" fill="#FFFFFF"/>
+                    <rect x="10" y="20" width="12" height="6" fill="#FFFFFF"/>
+                </svg>
+            ));
+            
+            this.load.image('grass', 'data:image/svg+xml;base64,' + btoa(`
+                <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="64" height="64" fill="#78E08F"/>
+                    <circle cx="20" cy="20" r="8" fill="#6CCA63" fill-opacity="0.5"/>
+                    <circle cx="44" cy="40" r="6" fill="#6CCA63" fill-opacity="0.5"/>
+                </svg>
+            ));
+        }
+
+        // Phaser场景 - 创建
+        function create() {
+            console.log('创建游戏场景...');
+            
+            // 设置背景色
+            this.cameras.main.setBackgroundColor('#0c2461');
+            
+            // 创建简单地图
+            for (let x = 0; x < 13; x++) {
+                for (let y = 0; y < 8; y++) {
+                    const tile = this.add.image(x * 64, y * 64, 'grass');
+                    tile.setOrigin(0);
+                }
+            }
+            
+            // 创建玩家
+            this.player = this.physics.add.sprite(400, 250, 'player');
+            this.player.setCollideWorldBounds(true);
+            this.player.setScale(1.5);
+            
+            // 创建怪物
+            this.monster = this.physics.add.sprite(600, 250, 'monster');
+            this.monster.setScale(1.5);
+            
+            // 键盘控制
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.keys = this.input.keyboard.addKeys('W,A,S,D,SPACE');
+            
+            // 鼠标控制
+            this.input.on('pointerdown', (pointer) => {
+                const x = pointer.worldX;
+                const y = pointer.worldY;
+                this.movePlayerTo(x, y);
+                addLog(`移动至位置 (${Math.round(x)}, ${Math.round(y)})`, 'info');
+            });
+            
+            // 添加游戏提示
+            this.add.text(400, 30, '传奇页游 - 可玩版', {
+                fontSize: '24px',
+                fill: '#f6b93b',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+            
+            this.add.text(400, 470, 'WASD/方向键移动，空格攻击，点击地面移动', {
+                fontSize: '16px',
+                fill: '#78e08f'
+            }).setOrigin(0.5);
+            
+            console.log('游戏场景创建完成');
+            addLog('游戏世界加载完成！', 'info');
+        }
+
+        // Phaser场景 - 更新
+        function update() {
+            const speed = 200;
+            this.player.setVelocity(0);
+            
+            // 键盘控制
+            if (this.cursors.left.isDown || this.keys.A.isDown) {
+                this.player.setVelocityX(-speed);
+            } else if (this.cursors.right.isDown || this.keys.D.isDown) {
+                this.player.setVelocityX(speed);
+            }
+            
+            if (this.cursors.up.isDown || this.keys.W.isDown) {
+                this.player.setVelocityY(-speed);
+            } else if (this.cursors.down.isDown || this.keys.S.isDown) {
+                this.player.setVelocityY(speed);
+            }
+            
+            // 空格键攻击
+            if (Phaser.Input.Keyboard.JustDown(this.cursors.space) || Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
+                attackMonster();
+            }
+            
+            // 怪物跟随玩家
+            const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.monster.x, this.monster.y);
+            if (distance > 100) {
+                this.physics.moveToObject(this.monster, this.player, 100);
+            } else {
+                this.monster.setVelocity(0);
+            }
+        }
+
+        // 移动玩家到指定位置
+        function movePlayerTo(x, y) {
+            const scene = gameState.game.scene.scenes[0];
+            if (scene && scene.player) {
+                const distance = Phaser.Math.Distance.Between(scene.player.x, scene.player.y, x, y);
+                const duration = distance / 100 * 1000;
+                
+                scene.tweens.add({
+                    targets: scene.player,
+                    x: x,
+                    y: y,
+                    duration: duration,
+                    ease: 'Power2'
+                });
+            }
+        }
+
+        // 页面加载完成后初始化游戏
+        window.addEventListener('load', () => {
+            console.log('页面加载完成，开始初始化...');
+            initGame();
+        });
+
+        // 导出函数供按钮使用
+        window.attackMonster = attackMonster;
+        window.useSkill = useSkill;
+        window.refreshMonster = refreshMonster;
+    </script>
+</body>
+</html>
