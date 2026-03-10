@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phaser.js 测试页面</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #test-game {
+            width: 800px;
+            height: 600px;
+            border: 2px solid #f6b93b;
+            margin: 20px auto;
+            background: #000;
+        }
+        .status {
+            text-align: center;
+            margin: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #2ecc71;
+            color: white;
+        }
+        .error {
+            background: #e74c3c;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Phaser.js 功能测试</h1>
+    <div id="test-game"></div>
+    <div id="status" class="status">正在加载Phaser.js...</div>
+    
+    <script>
+        console.log('开始Phaser.js测试...');
+        
+        // 检查Phaser是否加载
+        if (typeof Phaser === 'undefined') {
+            document.getElementById('status').className = 'status error';
+            document.getElementById('status').textContent = '❌ Phaser.js 加载失败！请检查CDN连接。';
+            console.error('Phaser.js未加载');
+        } else {
+            document.getElementById('status').className = 'status success';
+            document.getElementById('status').textContent = '✅ Phaser.js 加载成功！版本: ' + Phaser.VERSION;
+            console.log('Phaser.js加载成功，版本:', Phaser.VERSION);
+            
+            // 创建简单测试场景
+            class TestScene extends Phaser.Scene {
+                constructor() {
+                    super({ key: 'TestScene' });
+                }
+                
+                preload() {
+                    console.log('预加载资源...');
+                    // 创建一个简单的彩色矩形作为测试
+                    this.load.image('test-rect', 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="64" height="64" fill="#f6b93b"/>
+                            <circle cx="32" cy="32" r="20" fill="#78e08f"/>
+                            <text x="32" y="38" text-anchor="middle" fill="white" font-size="14">TEST</text>
+                        </svg>
+                    `));
+                }
+                
+                create() {
+                    console.log('创建游戏场景...');
+                    // 添加背景色
+                    this.cameras.main.setBackgroundColor('#0c2461');
+                    
+                    // 添加测试图形
+                    const rect = this.add.image(400, 300, 'test-rect');
+                    rect.setScale(2);
+                    
+                    // 添加文字
+                    const text = this.add.text(400, 100, 'Phaser.js 测试成功！', {
+                        fontSize: '32px',
+                        fill: '#f6b93b',
+                        fontStyle: 'bold'
+                    });
+                    text.setOrigin(0.5);
+                    
+                    // 添加说明
+                    const info = this.add.text(400, 500, '如果看到这个画面，说明Phaser.js工作正常', {
+                        fontSize: '20px',
+                        fill: '#78e08f'
+                    });
+                    info.setOrigin(0.5);
+                    
+                    document.getElementById('status').textContent = '✅ 游戏场景创建成功！';
+                    console.log('测试场景创建完成');
+                }
+            }
+            
+            // 游戏配置
+            const config = {
+                type: Phaser.AUTO,
+                width: 800,
+                height: 600,
+                parent: 'test-game',
+                scene: TestScene,
+                physics: {
+                    default: 'arcade',
+                    arcade: { debug: false }
+                }
+            };
+            
+            // 启动游戏
+            try {
+                const game = new Phaser.Game(config);
+                console.log('Phaser游戏实例创建成功');
+            } catch (error) {
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ 游戏初始化失败: ' + error.message;
+                console.error('游戏初始化错误:', error);
+            }
+        }
+    </script>
+</body>
+</html>
