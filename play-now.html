@@ -1,0 +1,356 @@
+            const skillInfo = skills[skill];
+            if (!skillInfo) {
+                addMessage('技能未解锁！', 'info');
+                return;
+            }
+            
+            if (GameState.player.mp >= skillInfo.cost) {
+                GameState.player.mp -= skillInfo.cost;
+                
+                if (skill === 'heal') {
+                    const healAmount = Math.floor(GameState.player.maxHp * 0.3);
+                    GameState.player.hp = Math.min(GameState.player.maxHp, GameState.player.hp + healAmount);
+                    addMessage(`使用了${skillInfo.name}，恢复了 ${healAmount} 点生命值`, 'heal');
+                    
+                    // Phaser效果
+                    if (GameState.scene) {
+                        GameState.scene.player.setTint(0x00ff00);
+                        GameState.scene.time.delayedCall(200, () => {
+                            GameState.scene.player.setTint(0x4169e1);
+                        });
+                    }
+                } else if (skill === 'magic') {
+                    const magicDamage = Math.floor(Math.random() * 20) + 15;
+                    GameState.monster.hp -= magicDamage;
+                    addMessage(`使用了${skillInfo.name}，对${GameState.monster.name}造成了 ${magicDamage} 点魔法伤害！`, 'combat');
+                    
+                    // Phaser效果
+                    if (GameState.scene) {
+                        GameState.scene.monster.setTint(0x9370db);
+                        GameState.scene.time.delayedCall(200, () => {
+                            GameState.scene.monster.setTint(0xff0000);
+                        });
+                    }
+                }
+                
+                // 检查怪物死亡
+                if (GameState.monster.hp <= 0) {
+                    GameState.monster.hp = 0;
+                    addMessage(`🎉 击败了${GameState.monster.name}，获得 ${GameState.monster.exp} 经验值！`, 'combat');
+                    GameState.player.exp += GameState.monster.exp;
+                    
+                    if (GameState.player.exp >= GameState.player.maxExp) {
+                        levelUp();
+                    }
+                }
+                
+                updateUI();
+            } else {
+                addMessage('魔法值不足！', 'combat');
+            }
+        }
+
+        // 刷新怪物
+        function refreshMonster() {
+            const monsters = [
+                { name: "野猪", hp: 50, exp: 10, loot: ["猪肉", "铜币"], difficulty: "简单" },
+                { name: "骷髅兵", hp: 80, exp: 15, loot: ["骨头", "铁剑", "铜币"], difficulty: "普通" },
+                { name: "狼", hp: 65, exp: 12, loot: ["狼皮", "狼牙", "铜币"], difficulty: "简单" },
+                { name: "哥布林", hp: 70, exp: 13, loot: ["哥布林耳朵", "短弓", "铜币"], difficulty: "普通" },
+                { name: "僵尸", hp: 100, exp: 20, loot: ["腐肉", "铁剑", "铜币", "治疗药水"], difficulty: "困难" },
+                { name: "骷髅王", hp: 150, exp: 30, loot: ["王者之剑", "骷髅王冠", "金币", "高级治疗药水"], difficulty: "BOSS" }
+            ];
+            
+            const monster = monsters[Math.floor(Math.random() * monsters.length)];
+            GameState.monster = {
+                name: monster.name,
+                hp: monster.hp,
+                maxHp: monster.hp,
+                exp: monster.exp,
+                loot: monster.loot,
+                difficulty: monster.difficulty
+            };
+            
+            addMessage(`发现了新的怪物：${monster.name}（${monster.difficulty}）！`, 'info');
+            updateUI();
+            
+            // Phaser效果：创建新怪物
+            if (GameState.scene && GameState.scene.monster) {
+                GameState.scene.monster.destroy();
+                createMonsterInScene();
+            }
+        }
+
+        // 升级
+        function levelUp() {
+            GameState.player.level++;
+            GameState.player.exp -= GameState.player.maxExp;
+            GameState.player.maxExp = Math.floor(GameState.player.maxExp * 1.5);
+            GameState.player.maxHp = Math.floor(GameState.player.maxHp * 1.25);
+            GameState.player.hp = GameState.player.maxHp;
+            GameState.player.maxMp = Math.floor(GameState.player.maxMp * 1.25);
+            GameState.player.mp = GameState.player.maxMp;
+            GameState.player.attackMin = Math.floor(GameState.player.attackMin * 1.15);
+            GameState.player.attackMax = Math.floor(GameState.player.attackMax * 1.15);
+            GameState.player.defense = Math.floor(GameState.player.defense * 1.1);
+            
+            addMessage(`🎉 恭喜升级到 ${GameState.player.level} 级！`, 'system');
+            addMessage(`生命值: ${GameState.player.maxHp}, 魔法值: ${GameState.player.maxMp}, 攻击力提升！`, 'system');
+            updateUI();
+            
+            // Phaser升级效果
+            if (GameState.scene) {
+                levelUpEffect();
+            }
+        }
+
+        // ==================== Phaser游戏引擎 ====================
+        function initPhaserGame() {
+            if (typeof Phaser === 'undefined') {
+                addMessage('❌ 游戏引擎加载失败，请刷新页面', 'system');
+                document.getElementById('game-status').textContent = '❌ 引擎加载失败';
+                return;
+            }
+            
+            const config = {
+                type: Phaser.AUTO,
+                width: 800,
+                height: 580,
+                parent: 'game',
+                backgroundColor: '#0a0a0a',
+                physics: {
+                    default: 'arcade',
+                    arcade: {
+                        gravity: { y: 0 },
+                        debug: false
+                    }
+                },
+                scene: {
+                    preload: preload,
+                    create: create,
+                    update: update
+                }
+            };
+            
+            try {
+                GameState.phaser = new Phaser.Game(config);
+                document.getElementById('game-status').textContent = '✅ 游戏运行中';
+            } catch (error) {
+                console.error('Phaser初始化失败:', error);
+                addMessage('⚠️ 游戏画面初始化失败，但核心功能正常', 'system');
+                document.getElementById('game-status').textContent = '⚠️ 核心功能正常';
+            }
+        }
+
+        function preload() {
+            // 创建简单的图形资源
+            this.textures.generate('player', {
+                data: [
+                    '  ███  ',
+                    ' █████ ',
+                    '███████',
+                    ' █████ ',
+                    '  ███  '
+                ],
+                pixelWidth: 16
+            });
+            
+            this.textures.generate('monster', {
+                data: [
+                    ' █████ ',
+                    '███████',
+                    ' █████ ',
+                    '  ███  ',
+                    '   █   '
+                ],
+                pixelWidth: 16
+            });
+            
+            this.textures.generate('ground', {
+                data: [
+                    '▓▓▓▓▓▓▓',
+                    '▓▓▓▓▓▓▓',
+                    '▓▓▓▓▓▓▓',
+                    '▓▓▓▓▓▓▓',
+                    '▓▓▓▓▓▓▓'
+                ],
+                pixelWidth: 16
+            });
+        }
+
+        function create() {
+            GameState.scene = this;
+            
+            // 创建地面
+            this.ground = this.add.tileSprite(400, 290, 800, 580, 'ground');
+            this.ground.setTint(0x228b22);
+            
+            // 创建玩家
+            this.player = this.physics.add.sprite(400, 290, 'player');
+            this.player.setTint(0x4169e1);
+            this.player.setCollideWorldBounds(true);
+            
+            // 创建怪物
+            createMonsterInScene();
+            
+            // 键盘控制
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.wasd = {
+                up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+                down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+                left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+                right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D)
+            };
+            
+            // 功能键
+            this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+            this.key1 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
+            this.key2 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+            this.keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+            
+            addMessage('✅ 游戏画面加载成功！', 'system');
+        }
+
+        function createMonsterInScene() {
+            if (!GameState.scene) return;
+            
+            const x = Phaser.Math.Between(100, 700);
+            const y = Phaser.Math.Between(100, 480);
+            
+            GameState.scene.monster = GameState.scene.physics.add.sprite(x, y, 'monster');
+            GameState.scene.monster.setTint(0xff0000);
+            GameState.scene.monster.setBounce(0.2);
+            GameState.scene.monster.setCollideWorldBounds(true);
+            
+            // 随机移动
+            GameState.scene.time.addEvent({
+                delay: 2000,
+                callback: () => {
+                    if (GameState.scene.monster && GameState.monster.hp > 0) {
+                        const vx = Phaser.Math.Between(-100, 100);
+                        const vy = Phaser.Math.Between(-100, 100);
+                        GameState.scene.monster.setVelocity(vx, vy);
+                    }
+                },
+                loop: true
+            });
+        }
+
+        function update() {
+            // 玩家移动
+            const speed = 200;
+            this.player.setVelocity(0);
+            
+            if (this.cursors.left.isDown || this.wasd.left.isDown) {
+                this.player.setVelocityX(-speed);
+            } else if (this.cursors.right.isDown || this.wasd.right.isDown) {
+                this.player.setVelocityX(speed);
+            }
+            
+            if (this.cursors.up.isDown || this.wasd.up.isDown) {
+                this.player.setVelocityY(-speed);
+            } else if (this.cursors.down.isDown || this.wasd.down.isDown) {
+                this.player.setVelocityY(speed);
+            }
+            
+            // 攻击键
+            if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+                attackMonster();
+            }
+            
+            // 技能键
+            if (Phaser.Input.Keyboard.JustDown(this.key1)) {
+                useSkill('heal');
+            }
+            
+            if (Phaser.Input.Keyboard.JustDown(this.key2)) {
+                useSkill('magic');
+            }
+            
+            // 刷新键
+            if (Phaser.Input.Keyboard.JustDown(this.keyR)) {
+                refreshMonster();
+            }
+            
+            // 怪物死亡处理
+            if (GameState.monster.hp <= 0 && this.monster) {
+                this.monster.destroy();
+                GameState.scene.time.delayedCall(1000, () => {
+                    if (GameState.monster.hp <= 0) {
+                        refreshMonster();
+                    }
+                });
+            }
+        }
+
+        function levelUpEffect() {
+            if (!GameState.scene) return;
+            
+            const particles = GameState.scene.add.particles('player');
+            const emitter = particles.createEmitter({
+                speed: 100,
+                scale: { start: 1, end: 0 },
+                blendMode: 'ADD',
+                lifespan: 1000
+            });
+            
+            emitter.explode(30, GameState.scene.player.x, GameState.scene.player.y);
+            
+            GameState.scene.player.setTint(0xffd700);
+            GameState.scene.time.delayedCall(1000, () => {
+                GameState.scene.player.setTint(0x4169e1);
+            });
+        }
+
+        // ==================== 初始化 ====================
+        function initGame() {
+            addMessage('游戏初始化中...', 'system');
+            updateUI();
+            
+            // 模拟加载
+            setTimeout(() => {
+                addMessage('✅ 游戏核心功能加载完成', 'system');
+                addMessage('使用WASD/方向键移动，空格攻击，1/2使用技能', 'system');
+                
+                // 初始化Phaser
+                setTimeout(initPhaserGame, 500);
+            }, 1000);
+        }
+
+        // 键盘事件监听
+        document.addEventListener('keydown', (event) => {
+            // 防止页面滚动
+            if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(event.code)) {
+                event.preventDefault();
+            }
+            
+            // 攻击
+            if (event.code === 'Space') {
+                attackMonster();
+            }
+            
+            // 技能
+            if (event.key === '1') {
+                useSkill('heal');
+            } else if (event.key === '2') {
+                useSkill('magic');
+            }
+            
+            // 刷新
+            if (event.key.toLowerCase() === 'r') {
+                refreshMonster();
+            }
+        });
+
+        // 页面加载完成
+        window.addEventListener('load', initGame);
+
+        // 错误处理
+        window.addEventListener('error', (event) => {
+            console.error('游戏错误:', event.error);
+            addMessage('⚠️ 游戏发生错误，但核心功能正常', 'system');
+            document.getElementById('game-status').textContent = '⚠️ 有错误但可玩';
+        });
+    </script>
+</body>
+</html>

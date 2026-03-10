@@ -1,17 +1,16 @@
 {
-  "name": "legend-web-game",
+  "name": "legend-game",
   "version": "1.0.0",
-  "description": "传奇类页游 - 基于Phaser.js开发",
-  "main": "index.html",
+  "description": "热血传奇页游 - 基于Phaser.js开发",
+  "main": "play-now.html",
   "scripts": {
-    "start": "serve .",
-    "build": "echo 'Building legend web game...'",
-    "vercel-build": "echo 'Vercel build completed'"
+    "start": "python3 -m http.server 3000",
+    "build": "echo 'Static site - no build required'",
+    "deploy": "vercel --prod"
   },
-  "keywords": ["game", "legend", "phaser", "html5", "javascript"],
-  "author": "Friday AI Assistant",
+  "keywords": ["game", "phaser", "legend", "html5"],
+  "author": "Bob",
   "license": "MIT",
-  "devDependencies": {
-    "serve": "^14.0.0"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }
