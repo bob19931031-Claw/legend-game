@@ -395,13 +395,35 @@ const config = {
 
 // 启动游戏
 window.addEventListener('load', () => {
-    const game = new Phaser.Game(config);
+    console.log('开始初始化Phaser游戏...');
+    console.log('Phaser版本:', Phaser.VERSION);
+    console.log('游戏容器:', document.getElementById('game'));
     
-    // 游戏加载完成后的回调
-    game.events.on('ready', () => {
-        console.log('传奇页游加载完成！');
+    try {
+        const game = new Phaser.Game(config);
+        console.log('Phaser游戏实例创建成功');
+        
+        // 游戏加载完成后的回调
+        game.events.on('ready', () => {
+            console.log('传奇页游加载完成！');
+            if (window.addLog) {
+                window.addLog('游戏世界已加载，开始冒险吧！', 'info');
+            }
+        });
+        
+        // 错误处理
+        game.events.on('error', (error) => {
+            console.error('Phaser游戏错误:', error);
+            if (window.addLog) {
+                window.addLog('游戏加载出错: ' + error.message, 'combat');
+            }
+        });
+        
+    } catch (error) {
+        console.error('游戏初始化失败:', error);
+        console.error('错误堆栈:', error.stack);
         if (window.addLog) {
-            window.addLog('游戏世界已加载，开始冒险吧！', 'info');
+            window.addLog('游戏初始化失败，请检查控制台', 'combat');
         }
-    });
+    }
 });
