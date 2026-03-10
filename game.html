@@ -1,14 +1,3 @@
-            const skillInfo = skills[skill];
-            if (!skillInfo) {
-                addMessage('技能未解锁！', 'info');
-                return;
-            }
-            
-            if (GameState.player.mp >= skillInfo.cost) {
-                GameState.player.mp -= skillInfo.cost;
-                
-                if (skill === 'heal') {
-                    const healAmount = Math.floor(GameState.player.maxHp * 0.3);
                     GameState.player.hp = Math.min(GameState.player.maxHp, GameState.player.hp + healAmount);
                     addMessage(`使用了${skillInfo.name}，恢复了 ${healAmount} 点生命值`, 'heal');
                     
